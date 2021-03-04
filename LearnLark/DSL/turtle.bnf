@@ -1,0 +1,14 @@
+start: instruction+
+ 
+instruction: ("f"|"b"|"l"|"r") NUMBER
+           | "c" COLOR [COLOR]
+           | "fill" code_block
+           | "repeat" NUMBER code_block
+ 
+code_block: "{" instruction+ "}"
+ 
+COLOR: ("a".."z")+   
+NUMBER: ("0".."9")+
+WHITESPACE: (" " | "\n")+
+
+%ignore WHITESPACE

@@ -1,0 +1,97 @@
+start: include_decl*
+    ( namespace_decl
+    | type_decl
+    | enum_decl
+    | root_decl
+    | file_extension_decl
+    | file_identifier_decl
+    | attribute_decl
+    )*
+
+private item_: COMMENT
+
+include_decl: INCLUDE STRING_LITERAL SEMICOLON
+
+namespace_decl: NAMESPACE IDENTIFIER ( DOT IDENTIFIER )* SEMICOLON
+
+attribute_decl: ATTRIBUTE STRING_LITERAL SEMICOLON
+
+type_decl: ( TABLE | STRUCT ) type_decl_name metadata OPEN_BLOCK field_decl* CLOSE_BLOCK
+
+enum_decl: ( ENUM | UNION ) type_decl_name [ COLON type ] metadata OPEN_BLOCK [ enumval_decl ( COMMA enumval_decl )* ] CLOSE_BLOCK
+
+type_decl_name: IDENTIFIER
+
+root_decl: ROOT_TYPE IDENTIFIER SEMICOLON
+
+field_decl: field_name COLON type [ EQUAL INTEGER_LITERAL ] SEMICOLON
+
+field_name: IDENTIFIER
+
+builtin_type: BOOL | BYTE | UBYTE | SHORT | USHORT | INT | UINT | FLOAT | LONG | ULONG | DOUBLE | STRING
+
+type: builtin_type | OPEN_BRACE type CLOSE_BRACE | custom_type
+
+custom_type: IDENTIFIER
+
+enumval_decl: IDENTIFIER [ EQUAL INTEGER_LITERAL ]
+
+metadata: [ OPEN_PARENTHESIS [ metadata_part ( COMMA metadata_part ) * ] CLOSE_PARENTHESIS ]
+
+metadata_part: IDENTIFIER [ COLON single_value ]
+
+scalar: INTEGER_LITERAL | FLOAT_LITERAL | TRUE | FALSE
+
+object:  [ object_part ( COMMA object_part ) * ]
+
+object_part: IDENTIFIER COLON value
+
+single_value: scalar | STRING_LITERAL
+
+value: single_value | object | OPEN_BRACE [ value ( COMMA value ) * ] CLOSE_BRACE
+
+INCLUDE:            "include"
+SEMICOLON:          ";"
+NAMESPACE:          "namespace"
+DOT:                "."
+ATTRIBUTE:          "required" | "deprecated"
+ROOT_TYPE:          "root_type"
+TABLE:              "table"
+STRUCT:             "struct"
+OPEN_BLOCK:         "{"
+CLOSE_BLOCK:        "}"
+ENUM:               "enum"
+UNION:              "union"
+COLON:              ":"
+COMMA:              ","
+EQUAL:              "="
+BOOL:               "bool"
+BYTE:               "byte"
+UBYTE:              "ubyte"
+SHORT:              "short"
+USHORT:             "ushort"
+INT:                "int"
+UINT:               "uint"
+FLOAT:              "float"
+LONG:               "long"
+ULONG:              "ulong"
+DOUBLE:             "double"
+STRING:             "string"
+OPEN_BRACE:         "["
+CLOSE_BRACE:         "]"
+OPEN_PARENTHESIS:   "("
+CLOSE_PARENTHESIS:  ")"
+TRUE:               "true"
+FALSE:              "false"
+STRING_LITERAL:     (".*")
+INTEGER_LITERAL:    ([0-9]+)
+FLOAT_LITERNAL:     ([0-9]*(\.[0-9]+)?([eE][+-]?[0-9]+)?)
+IDENTIFIER:         ([a-zA-Z_](\.[a-zA-Z_0-9]|[a-zA-Z_0-9])*)
+WHITESPACE:         ([ \t\r\n]*)
+COMMENT:            ("//"[^\n]*)
+
+%import common.STRING -> STRING_LITERAL 
+%import common.INT -> INTGER_LITERAL 
+
+%ignore WHITESPACE
+%ignroe COMMENT

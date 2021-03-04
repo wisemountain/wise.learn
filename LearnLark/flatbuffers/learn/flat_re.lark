@@ -1,0 +1,124 @@
+start: include_decl* ( namespace_decl | type_decl | enum_decl | root_decl | attribute_decl )*
+
+include_decl: INCLUDE STRING_LITERAL SEMICOLON
+
+namespace_decl: NAMESPACE IDENTIFIER ( DOT IDENTIFIER )* SEMICOLON
+
+attribute_decl: ATTRIBUTE STRING_LITERAL SEMICOLON
+
+type_decl: ( TABLE | STRUCT ) type_decl_name metadata OPEN_BLOCK field_decl* CLOSE_BLOCK
+
+enum_decl: ( ENUM | UNION ) type_decl_name [ COLON type ] metadata OPEN_BLOCK [ enumval_decl ( COMMA enumval_decl )* ] CLOSE_BLOCK
+
+root_decl: ROOT_TYPE IDENTIFIER SEMICOLON
+
+type_decl_name: IDENTIFIER
+
+field_decl: field_name COLON type [ EQUAL INTEGER_LITERAL ] SEMICOLON
+
+field_name: IDENTIFIER
+
+metadata: [ OPEN_PARENTHESIS [ metadata_part ( COMMA metadata_part ) * ] CLOSE_PARENTHESIS ]
+
+metadata_part: IDENTIFIER [ COLON single_value ]
+
+builtin_type: BOOL | BYTE | UBYTE | SHORT | USHORT | INT | UINT | FLOAT | LONG | ULONG | DOUBLE | STRING
+
+type: builtin_type | OPEN_BRACE type CLOSE_BRACE | custom_type
+
+custom_type: IDENTIFIER
+
+enumval_decl: IDENTIFIER [ EQUAL INTEGER_LITERAL ]
+
+object:  [ object_part ( COMMA object_part ) * ]
+
+object_part: IDENTIFIER COLON value
+
+scalar: INTEGER_LITERAL | FLOAT_LITERAL | TRUE | FALSE
+
+single_value: scalar | STRING_LITERAL
+
+value: single_value | object | OPEN_BRACE [ value ( COMMA value ) * ] CLOSE_BRACE
+
+terminals: INCLUDE 
+    | SEMICOLON
+    | DOT
+    | ATTRIBUTE
+    | ROOT_TYPE
+    | TABLE 
+    | STRUCT 
+    | OPEN_BLOCK 
+    | CLOSE_BLOCK
+    | ENUM 
+    | UNION 
+    | COLON 
+    | COMMA 
+    | EQUAL 
+    | BOOL 
+    | BYTE 
+    | UBYTE 
+    | SHORT 
+    | USHORT 
+    | INT 
+    | UINT 
+    | FLOAT 
+    | LONG 
+    | ULONG 
+    | DOUBLE 
+    | STRING 
+    | OPEN_BRACE 
+    | CLOSE_BRACE 
+    | OPEN_PARENTHESIS
+    | CLOSE_PARENTHESIS
+    | TRUE 
+    | FALSE 
+    | STRING_LITERAL
+    | INTEGER_LITERAL
+    | FLOAT_LITERAL
+    | IDENTIFIER 
+
+
+INCLUDE:            "include"
+SEMICOLON:          ";"
+NAMESPACE:          "namespace"
+DOT:                "."
+ATTRIBUTE:          "required" | "deprecated"
+ROOT_TYPE:          "root_type"
+TABLE:              "table"
+STRUCT:             "struct"
+OPEN_BLOCK:         "{"
+CLOSE_BLOCK:        "}"
+ENUM:               "enum"
+UNION:              "union"
+COLON:              ":"
+COMMA:              ","
+EQUAL:              "="
+BOOL:               "bool"
+BYTE:               "byte"
+UBYTE:              "ubyte"
+SHORT:              "short"
+USHORT:             "ushort"
+INT:                "int"
+UINT:               "uint"
+FLOAT:              "float"
+LONG:               "long"
+ULONG:              "ulong"
+DOUBLE:             "double"
+STRING:             "string"
+OPEN_BRACE:         "["
+CLOSE_BRACE:         "]"
+OPEN_PARENTHESIS:   "("
+CLOSE_PARENTHESIS:  ")"
+TRUE:               "true"
+FALSE:              "false"
+COMMENT:            /\/\/(.*\n)/
+
+%import common.INT      -> INTEGER_LITERAL 
+%import common.WS       -> WHITESPACE
+%import common.FLOAT    -> FLOAT_LITERAL
+%import common.CNAME    -> IDENTIFIER
+%import common.ESCAPED_STRING -> STRING_LITERAL
+
+%ignore WHITESPACE
+%ignore COMMENT
+
