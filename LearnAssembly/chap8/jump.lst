@@ -1,0 +1,30 @@
+     1                                 %line 1+1 jump.asm
+     2                                 [segment .data]
+     3 00000000 [0000000000000000]     switch: dq _start.case0
+     4 00000008 [0000000000000000]      dq _start.case1
+     5 00000010 [0000000000000000]      dq _start.case2
+     6                                 
+     7 00000018 0000000000000000       i: dq 0
+     8                                 
+     9                                 [segment .text]
+    10                                 [global _start]
+    11                                 _start:
+    12 00000000 488B0425[00000000]      mov rax, [i]
+    13 00000008 FF24C5[00000000]        jmp [switch + rax*8]
+    14                                 
+    15                                 .case0:
+    16 0000000F 48C7C364000000          mov rbx, 100
+    17 00000016 EB10                    jmp .end
+    18                                 
+    19                                 .case1:
+    20 00000018 48C7C365000000          mov rbx, 101
+    21 0000001F EB07                    jmp .end
+    22                                 
+    23                                 .case2:
+    24 00000021 48C7C366000000          mov rbx, 102
+    25 00000028 EBFE                    jmp .end
+    26                                 
+    27                                 .end
+    28 0000002A 48C7C03C000000          mov rax, 60
+    29 00000031 4889DF                  mov rdi, rbx
+    30 00000034 0F05                    syscall

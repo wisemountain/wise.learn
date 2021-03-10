@@ -140,6 +140,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="LearnC++.cpp" />
+    <ClCompile Include="LearnN4713\chap_20.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_3.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_4.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LearnN4713\chap_20.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

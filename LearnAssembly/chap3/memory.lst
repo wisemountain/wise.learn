@@ -1,0 +1,21 @@
+     1                                 %line 1+1 memory.asm
+     2                                 [segment .data]
+     3 00000000 04000000               a dd 4
+     4 00000004 CDCC8C40               b dd 4.4
+     5 00000008 00000000<rept>         c times 10 dd 0
+     6 00000030 01000200               d dw 1, 2
+     7 00000034 FB                     e db 0xfb
+     8 00000035 68656C6C6F20776F72-    f db "hello world", 0
+     9 00000035 6C6400             
+    10                                 
+    11                                 [segment .bss]
+    12 00000000 <gap>                  g resd 1
+    13 00000004 <gap>                  h resd 10
+    14 0000002C <gap>                  i resb 100
+    15                                 
+    16                                 [segment .text]
+    17                                 [global _start]
+    18                                 _start:
+    19 00000000 B83C000000              mov eax, 60
+    20 00000005 BB00000000              mov ebx, 0
+    21 0000000A 0F05                    syscall

@@ -1,0 +1,15 @@
+     1                                 %line 1+1 test.asm
+     2                                 [segment .data]
+     3 00000000 AF00000000000000       a dq 175
+     4 00000008 0110000000000000       b dq 4097
+     5                                 
+     6                                 [segment .text]
+     7                                 [global _start]
+     8                                 _start:
+     9 00000000 488B0425[00000000]      mov rax, [a]
+    10 00000008 48030425[00000000]      add rax, [b]
+    11                                 
+    12 00000010 4831C0                  xor rax, rax
+    13 00000013 48C7C03C000000          mov rax, 60
+    14 0000001A 48C7C700000000          mov rdi, 0
+    15 00000021 0F05                    syscall

@@ -1,0 +1,15 @@
+     1                                 %line 1+1 indexing.asm
+     2                                 [segment .bass]
+     3 00000000 <gap>                  a resb 100
+     4 00000064 <gap>                  b resd 100
+     5                                 [align 8]
+     6 000001F8 <gap>                  c resq 100
+     7                                 
+     8                                 [segment .text]
+     9                                 [global main]
+    10                                 main:
+    11 00000000 55                      push rbp
+    12 00000001 4889E5                  mov rbp, rsp
+    13 00000004 4883EC10                sub rsp, 16
+    14 00000008 C9                      leave
+    15 00000009 C3                      ret

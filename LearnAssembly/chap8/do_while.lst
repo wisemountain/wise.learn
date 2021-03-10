@@ -1,0 +1,44 @@
+     1                                 %line 1+1 do_while.asm
+     2                                 [segment .data]
+     3                                 
+     4 00000000 68656C6C6F20776F72-    data db "hello world", 0
+     5 00000000 6C6400             
+     6 0000000C 0000000000000000       n dq 0
+     7 00000014 77                     needle db 'w'
+     8                                 
+     9                                 [segment .text]
+    10                                 [global _start]
+    11                                 
+    12                                 _start:
+    13 00000000 55                      push rbp
+    14 00000001 4889E5                  mov rbp, rsp
+    15 00000004 4883EC10                sub rsp, 16
+    16                                 
+    17                                 
+    18                                 
+    19 00000008 8A1C25[00000000]        mov bl, [needle]
+    20 0000000F 31C9                    xor ecx, ecx
+    21 00000011 8A81[00000000]          mov al, [data+rcx]
+    22 00000017 3C00                    cmp al, 0
+    23 00000019 740F                    jz end_while
+    24                                 
+    25                                 while:
+    26 0000001B 38D8                    cmp al, bl
+    27 0000001D 7412                    je found
+    28 0000001F 48FFC1                  inc rcx
+    29 00000022 8A81[00000000]          mov al, [data+rcx]
+    30 00000028 3C00                    cmp al, 0
+    31 0000002A 75ED                    jnz while
+    32                                 
+    33                                 end_while:
+    34 0000002C 48C7C1FFFFFFFF          mov rcx, -1
+    35                                 found:
+    36 00000033 48890C25[00000000]      mov [n], rcx
+    37 0000003B 31C0                    xor eax, eax
+    38                                 
+    39                                 exit:
+    40 0000003D 48C7C03C000000          mov rax, 60
+    41 00000044 488B3C25[00000000]      mov rdi, [n]
+    42 0000004C 0F05                    syscall
+    43                                 
+    44                                 

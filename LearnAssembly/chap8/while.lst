@@ -1,0 +1,37 @@
+     1                                 %line 1+1 while.asm
+     2                                 [segment .data]
+     3 00000000 1032547698BADCFE       data dq 0xfedcba9876543210
+     4 00000008 0000000000000000       sum dq 0
+     5                                 
+     6                                 [segment .text]
+     7                                 [global _start]
+     8                                 _start:
+     9                                 
+    10 00000000 55                      push rbp
+    11 00000001 4889E5                  mov rbp, rsp
+    12 00000004 4883EC10                sub rsp, 16
+    13                                 
+    14                                 
+    15 00000008 488B0425[00000000]      mov rax, [data]
+    16 00000010 31DB                    xor ebx, ebx
+    17 00000012 31C9                    xor ecx, ecx
+    18 00000014 31D2                    xor edx, edx
+    19                                 
+    20                                 while:
+    21 00000016 4883F940                cmp rcx, 64
+    22 0000001A 7D10                    jnl end_while
+    23 0000001C 480FBAE000              bt rax, 0
+    24 00000021 0F92D3                  setc bl
+    25 00000024 01DA                    add edx, ebx
+    26 00000026 48D1E8                  shr rax, 1
+    27 00000029 48FFC1                  inc rcx
+    28 0000002C EBE6                    jmp while
+    29                                 
+    30                                 end_while:
+    31 0000002E 48891425[00000000]      mov [sum], rdx
+    32 00000036 31C0                    xor eax, eax
+    33                                 
+    34                                 exit:
+    35 00000038 48C7C03C000000          mov rax, 60
+    36 0000003F 488B3C25[00000000]      mov rdi, [sum]
+    37 00000047 0F05                    syscall

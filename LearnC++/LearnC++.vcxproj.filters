@@ -5,10 +5,30 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="LearnN4713">
+      <UniqueIdentifier>{fe004d09-ae36-4278-a3c5-9079d5df873d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LearnStroustrup">
+      <UniqueIdentifier>{48e831f2-2afe-486b-af36-a1adbc2140ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LearnC++.cpp">
       <Filter>main</Filter>
     </ClCompile>
+    <ClCompile Include="LearnN4713\chap_20.cpp">
+      <Filter>LearnN4713</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_3.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_4.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LearnN4713\chap_20.md">
+      <Filter>LearnN4713</Filter>
+    </None>
   </ItemGroup>
 </Project>

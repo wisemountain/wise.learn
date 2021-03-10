@@ -1,0 +1,9 @@
+
+if [ $# -ne 1 ]; then 
+	echo "Usage: $0 app"
+	exit -1
+else 
+	yasm -f elf64 -g dwarf2 -l $1.lst $1.asm
+	gcc -o $1 $1.o
+fi
+
