@@ -1,4 +1,4 @@
-		segment .bass 
+		segment .bss 
 a 		resb 		100 
 b 		resd 		100 
 		align 		8 

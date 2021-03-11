@@ -1,5 +1,5 @@
      1                                 %line 1+1 indexing.asm
-     2                                 [segment .bass]
+     2                                 [segment .bss]
      3 00000000 <gap>                  a resb 100
      4 00000064 <gap>                  b resd 100
      5                                 [align 8]
