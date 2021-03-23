@@ -25,10 +25,35 @@
     <ClCompile Include="LearnStroustrup\chap_4.cpp">
       <Filter>LearnStroustrup</Filter>
     </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_5.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_7.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_11.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_12.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_13.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_14.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_16.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_17.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="LearnN4713\chap_20.md">
       <Filter>LearnN4713</Filter>
     </None>
+    <None Include="2013 Stroustrup - The C++ Programming Language 4th Edition.pdf" />
   </ItemGroup>
 </Project>

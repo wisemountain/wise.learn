@@ -116,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,6 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,10 +143,19 @@
   <ItemGroup>
     <ClCompile Include="LearnC++.cpp" />
     <ClCompile Include="LearnN4713\chap_20.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_11.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_12.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_13.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_14.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_16.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_17.cpp" />
     <ClCompile Include="LearnStroustrup\chap_3.cpp" />
     <ClCompile Include="LearnStroustrup\chap_4.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_5.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_7.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="2013 Stroustrup - The C++ Programming Language 4th Edition.pdf" />
     <None Include="LearnN4713\chap_20.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
