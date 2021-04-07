@@ -149,6 +149,7 @@
     <ClCompile Include="LearnStroustrup\chap_14.cpp" />
     <ClCompile Include="LearnStroustrup\chap_16.cpp" />
     <ClCompile Include="LearnStroustrup\chap_17.cpp" />
+    <ClCompile Include="LearnStroustrup\chap_28.cpp" />
     <ClCompile Include="LearnStroustrup\chap_3.cpp" />
     <ClCompile Include="LearnStroustrup\chap_4.cpp" />
     <ClCompile Include="LearnStroustrup\chap_5.cpp" />

@@ -66,4 +66,7 @@ TEST_CASE("ss chap 17. consturction, cleanup, copy and move")
     // call        std::basic_string<char,std::char_traits<char>,std::allocator<char> >::basic_string<char,std::char_traits<char>,std::allocator<char> > (07FF7F824D37Dh)  
     // - default constructor는 멤버 변수 초기화를 호출하도록 생성된다.
   }
+
+
 }
+

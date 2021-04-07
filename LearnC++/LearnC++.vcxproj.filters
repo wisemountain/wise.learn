@@ -49,6 +49,9 @@
     <ClCompile Include="LearnStroustrup\chap_17.cpp">
       <Filter>LearnStroustrup</Filter>
     </ClCompile>
+    <ClCompile Include="LearnStroustrup\chap_28.cpp">
+      <Filter>LearnStroustrup</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="LearnN4713\chap_20.md">
