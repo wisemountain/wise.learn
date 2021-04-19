@@ -142,6 +142,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Inside.cpp" />
+    <ClCompile Include="Look\shared_mutex_perf.cpp" />
+    <ClCompile Include="Look\single_lock_per_thread.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
