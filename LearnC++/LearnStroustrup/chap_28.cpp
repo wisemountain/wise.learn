@@ -47,7 +47,13 @@ public:
   }
 };
 
+template <typename RESULT, typename OBJ, typename FUNC> 
+RESULT call_shared(OBJ& obj, FUNC func)
+{
+  return func();
 }
+
+} // noname
 
 TEST_CASE("ss chap 28. metaprogramming")
 {
@@ -70,6 +76,16 @@ TEST_CASE("ss chap 28. metaprogramming")
 
     // 
 
+  }
+
+  SUBCASE("function call")
+  {
+    int v = 0;
+
+    call_shared<void>(v, []() {});
+    auto r = call_shared<int>(v, [v]() { return v; });
+
+    CHECK(r == 0);
   }
 
 }
