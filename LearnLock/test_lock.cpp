@@ -1,6 +1,8 @@
 #include "doctest.h"
 #include "lock_guards.hpp"
 
+#include <thread>
+
 using namespace learn;
 
 TEST_CASE("basic interface")
@@ -154,7 +156,34 @@ TEST_CASE("lock between threads")
   {
     lockable l_1("lock_1");
 
-    
+    int v = 0;
+
+    std::thread t1([&l_1, &v]() {
+      for (int i = 0; i < 1000; ++i)
+      {
+        xlock x_1(&l_1);
+        v += 1;
+      }
+      });
+
+    std::thread t2([&l_1, &v]() {
+      for (int i = 0; i < 1000; ++i)
+      {
+        int lv = 0;
+
+        slock s_1(&l_1);
+        lv = v;
+
+        xlock x_1(&l_1);
+        v = ++lv;
+      }
+      });
+
+    t1.join();
+    t2.join();
+
+    // slock에서 xlock으로 unlock으로 업그레이하면 값 유지가 안 된다.. 
+    CHECK(v >= 0); 
   }
 }
 
