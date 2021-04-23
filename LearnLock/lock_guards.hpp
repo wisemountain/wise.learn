@@ -31,41 +31,37 @@ protected:
 class xlock : public lock_guard_base
 {
 public: 
-  xlock(lockable* lock)
+  xlock(lockable& lock)
     : lock_(lock)
   {
-    assert(lock_ != nullptr);
-
-    index_ = lock_thread_tracer::inst.enter_xlock(lock_);
+    index_ = lock_thread_tracer::inst.enter_xlock(&lock_);
   }
 
   ~xlock()
   {
-    lock_thread_tracer::inst.exit_xlock(lock_);
+    lock_thread_tracer::inst.exit_xlock(&lock_);
   }
 
 private: 
-  lockable* lock_;
+  lockable& lock_;
 };
 
 class slock : public lock_guard_base
 {
 public: 
-  slock(lockable* lock)
+  slock(lockable& lock)
     : lock_(lock)
   {
-    assert(lock_ != nullptr);
-
-    index_ = lock_thread_tracer::inst.enter_slock(lock_);
+    index_ = lock_thread_tracer::inst.enter_slock(&lock_);
   }
 
   ~slock()
   {
-    lock_thread_tracer::inst.exit_slock(lock_);
+    lock_thread_tracer::inst.exit_slock(&lock_);
   }
 
 private: 
-  lockable* lock_;
+  lockable& lock_;
 };
 
 } // learn

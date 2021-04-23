@@ -100,10 +100,10 @@ public:
   {
     assert(mode_latch_ >= 0);
 
-    ++mode_latch_;
+    ++mode_latch_;                          
 
     std::shared_mutex::unlock_shared();
-    std::shared_mutex::lock();              // wait here
+    std::shared_mutex::lock();              // 여기서 대기하는 것으로 upgrade 간 경쟁 해결
 
     --mode_latch_;
   }
