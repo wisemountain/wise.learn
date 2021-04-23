@@ -177,10 +177,10 @@ TEST_CASE("lock between threads")
           int lv = 0;
 
           slock s_1(&l_1);
-          lv = v;
+          lv = v;           // 여러 쓰레드에서 실행할 경우, 여기서 이전 값을 같이 보게 된다.
 
           xlock x_1(&l_1);
-          v = ++lv;
+          v = ++lv;         // 하나의 쓰레드에서 먼저 실행하고, 이전 값을 본 쓰레드에서 덮어 쓴다. 이는 정상 동작이다.
         }
       };
 
@@ -216,11 +216,15 @@ TEST_CASE("lock between threads")
         {
           int lv = 0;
 
-          slock s_1(&l_1);
+          xlock x_1(&l_1); 
           lv = v;
-
-          xlock x_1(&l_1); // upgrade
           v = ++lv;
+
+          // downgrade는 변경 값을 정확하게 볼 수 있다.
+          {
+            slock s_1(&l_1);
+            CHECK(lv == v);
+          }
         }
       });
 
@@ -229,31 +233,42 @@ TEST_CASE("lock between threads")
         {
           int lv = 0;
 
-          slock s_1(&l_1);
+          xlock x_1(&l_1); 
           lv = v;
-
-          xlock x_1(&l_1); // upgrade
           v = ++lv;
+
+          {
+            slock s_1(&l_1);
+            CHECK(lv == v);
+          }
         }
       });
 
+      std::thread t4([&l_1, &v]() {
+        for (int i = 0; i < 1000; ++i)
+        {
+          int lv = 0;
 
-      //std::thread t4(func);
-      //std::thread t5(func);
-      //std::thread t6(func);
-      //std::thread t7(func);
+          xlock x_1(&l_1); 
+          lv = v;
+          v = ++lv;
+
+          {
+            slock s_1(&l_1);
+            CHECK(lv == v);
+          }
+        }
+      });
 
       t1.join();
       t2.join();
       t3.join();
-      //t4.join();
-      //t5.join();
-      //t6.join();
-      //t7.join();
-
-      CHECK(v == 3000);
+      t4.join();
 
       std::cout << "loop: " << j << std::endl;
+
+      CHECK(v == 4000);
+
     }
   }
 }

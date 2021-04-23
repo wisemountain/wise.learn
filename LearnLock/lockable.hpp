@@ -24,7 +24,7 @@ public:
   lockable(const char* name)
     : std::shared_mutex()
     , name_(name)
-    , mode_latch_(false)
+    , mode_latch_(0)
   {}
 
   const std::string_view& name() const
@@ -34,18 +34,20 @@ public:
 
   void lock() noexcept
   {
-    bool bv = false;
+    int bv = 0;
 
     do
     {
-      while (mode_latch_.load(std::memory_order::memory_order_acquire))
+      while (mode_latch_)
+      {
         cpu_relax();
+      }
 
-      std::shared_mutex::lock();
+      std::shared_mutex::lock(); 
 
-      bv = mode_latch_.load(std::memory_order::memory_order_acquire);
+      bv = mode_latch_;
 
-      if (bv) // lock 호출 동안에 래치가 잡혀있다면 
+      if (bv > 0) // lock 호출 동안에 래치가 잡혀있다면 
       {
         // 래치가 잡혀 있으면 나는 포기
         std::shared_mutex::unlock();
@@ -54,7 +56,7 @@ public:
       {
         break; // 값을 다시 조회하기 전에 같은 값으로 처리되어야 함
       }
-    } while (bv);
+    } while (bv > 0);
   }
 
   void unlock() noexcept 
@@ -64,18 +66,20 @@ public:
 
   void lock_shared() noexcept 
   {
-    bool bv = false;
+    int bv = 0;
 
     do
     {
-      while (mode_latch_.load(std::memory_order::memory_order_acquire))
+      while (mode_latch_)
+      {
         cpu_relax();
+      }
 
       std::shared_mutex::lock_shared();
 
-      bv = mode_latch_.load(std::memory_order::memory_order_acquire);
+      bv = mode_latch_;
 
-      if (bv)
+      if (bv > 0)
       {
         // 래치가 잡혀 있으면 나는 포기
         std::shared_mutex::unlock_shared();
@@ -84,7 +88,7 @@ public:
       {
         break; // 값을 다시 조회하기 전에 같은 값으로 처리되어야 함
       }
-    } while (bv);
+    } while (bv > 0);
   }
 
   void unlock_shared() noexcept 
@@ -94,67 +98,31 @@ public:
 
   void upgrade() noexcept
   {
-    bool bv = false;
-    bool unlocked = false;
+    assert(mode_latch_ >= 0);
 
-    while (!mode_latch_.compare_exchange_strong(bv, true))
-    {
-      cpu_relax();
-      bv = false;
+    ++mode_latch_;
 
-      if (!unlocked)
-      {
-        // 래치가 잡혀 있으면 락을 풀어준다.
-        std::shared_mutex::unlock_shared();
-        unlocked = true;
-      }
-    }
+    std::shared_mutex::unlock_shared();
+    std::shared_mutex::lock();              // wait here
 
-    assert(bv == false);
-    assert(mode_latch_);
-
-    if (!unlocked)
-    {
-      std::shared_mutex::unlock_shared();
-    }
-
-    std::shared_mutex::lock();
-    mode_latch_.store(false, std::memory_order::memory_order_release);
+    --mode_latch_;
   }
 
   void downgrade() noexcept
   {
-    bool bv = false;
-    bool unlocked = false;
+    assert(mode_latch_ >= 0);
 
-    while (!mode_latch_.compare_exchange_strong(bv, true))
-    {
-      cpu_relax();
-      bv = false;
+    ++mode_latch_;
 
-      if (!unlocked)
-      {
-        // 래치가 잡혀 있으면 락을 풀어준다.
-        std::shared_mutex::unlock();
-        unlocked = true;
-      }
-    }
-
-    assert(bv == false);
-    assert(mode_latch_);
-
-    if (!unlocked)
-    {
-      std::shared_mutex::unlock();
-    }
-
+    std::shared_mutex::unlock();
     std::shared_mutex::lock_shared();
-    mode_latch_.store(false, std::memory_order::memory_order_release);
+
+    --mode_latch_;
   }
 
 private: 
   std::string_view name_;
-  std::atomic<bool> mode_latch_;
+  std::atomic<int> mode_latch_;
 };
 
 } // learn
