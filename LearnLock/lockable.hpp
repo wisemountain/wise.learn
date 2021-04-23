@@ -3,6 +3,17 @@
 #include <shared_mutex>
 #include <string_view>
 
+#ifdef _MSC_VER
+#define WINDOWS_LEAN_AND_MEAN 
+#include <windows.h>
+#define cpu_relax() YieldProcessor()
+#else
+#define cpu_relax() { \
+   static constexpr std::chrono::microseconds us0{ 0 }; \
+   std::this_thread::sleep_for( us0);  \
+}
+#endif
+
 namespace learn
 {
 
@@ -22,10 +33,27 @@ public:
 
   void lock() noexcept
   {
-    while (mode_latch_)
-      ;
+    bool bv = false;
 
-    std::shared_mutex::lock();
+    do
+    {
+      while (mode_latch_)
+        cpu_relax();
+
+      std::shared_mutex::lock();
+
+      bv = mode_latch_;
+
+      if (bv) // lock 호출 동안에 래치가 잡혀있다면 
+      {
+        // 래치가 잡혀 있으면 나는 포기
+        std::shared_mutex::unlock();
+      }
+      else
+      {
+        break; // 값을 다시 조회하기 전에 같은 값으로 처리되어야 함
+      }
+    } while (bv);
   }
 
   void unlock() noexcept 
@@ -35,10 +63,27 @@ public:
 
   void lock_shared() noexcept 
   {
-    while (mode_latch_)
-      ;
+    bool bv = false;
 
-    std::shared_mutex::lock_shared();
+    do
+    {
+      while (mode_latch_)
+        cpu_relax();
+
+      std::shared_mutex::lock_shared();
+
+      bv = mode_latch_;
+
+      if (bv)
+      {
+        // 래치가 잡혀 있으면 나는 포기
+        std::shared_mutex::unlock_shared();
+      }
+      else
+      {
+        break; // 값을 다시 조회하기 전에 같은 값으로 처리되어야 함
+      }
+    } while (bv);
   }
 
   void unlock_shared() noexcept 
@@ -49,18 +94,18 @@ public:
   void upgrade() noexcept
   {
     while (mode_latch_)
-      ; 
+      cpu_relax();
 
     mode_latch_ = 1;
-    std::shared_mutex::unlock_shared();
+    std::shared_mutex::unlock_shared();   
     std::shared_mutex::lock();
-    mode_latch_ = 0;
+    mode_latch_ = 0; 
   }
 
   void downgrade() noexcept
   {
     while (mode_latch_)
-      ; 
+      cpu_relax();
 
     mode_latch_ = 1;
     std::shared_mutex::unlock();

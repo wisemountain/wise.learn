@@ -120,9 +120,11 @@ public:
 
     if (current->called_)
     {
-      current->lock_->unlock();
-
-      if (current->prev_ >= 0)
+      if (current->prev_ < 0)
+      {
+        current->lock_->unlock();
+      }
+      else 
       {
         assert(current_ > current->prev_);
 
@@ -140,7 +142,7 @@ public:
         {
           // 호출 여부와 관계 없이 락을 복원한다. 
           // 호출 상태는 유지하여 원래 호출한 락에서 exit처리를 한다.
-          prev_lock->lock_->lock_shared();
+          prev_lock->lock_->downgrade();
           prev_lock->locked_ = true;
         }
         break;
@@ -236,10 +238,12 @@ public:
 
     if (current->called_)
     {
-      current->lock_->unlock_shared();
-
-      if (current->prev_ >= 0)
+      if (current->prev_ < 0)
       {
+        current->lock_->unlock_shared();
+      }
+      else 
+      { 
         assert(current_ > current->prev_);
 
         auto prev_lock = &locks_[current->prev_];
@@ -250,7 +254,7 @@ public:
         {
           // 호출 여부와 관계 없이 락을 복원한다. 
           // 호출 상태는 유지하여 원래 호출한 락에서 exit처리를 한다.
-          prev_lock->lock_->lock();
+          prev_lock->lock_->upgrade();
           prev_lock->locked_ = true;
         }
         break;

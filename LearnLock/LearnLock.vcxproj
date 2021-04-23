@@ -155,6 +155,7 @@
     <ClInclude Include="lock_guards.hpp" />
     <ClInclude Include="lock_thread_tracer.hpp" />
     <ClInclude Include="lock_tracer.hpp" />
+    <ClInclude Include="spinlock.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
