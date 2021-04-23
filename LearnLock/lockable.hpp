@@ -48,6 +48,9 @@ public:
 
   void upgrade() noexcept
   {
+    while (mode_latch_)
+      ; 
+
     mode_latch_ = 1;
     std::shared_mutex::unlock_shared();
     std::shared_mutex::lock();
@@ -56,6 +59,9 @@ public:
 
   void downgrade() noexcept
   {
+    while (mode_latch_)
+      ; 
+
     mode_latch_ = 1;
     std::shared_mutex::unlock();
     std::shared_mutex::lock_shared();
