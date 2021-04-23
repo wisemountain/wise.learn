@@ -6,55 +6,108 @@ using namespace learn;
 TEST_CASE("basic interface")
 {
 
-  SUBCASE("flow 1 - xlock_keep")
+  SUBCASE("flow 1 - xlock")
   {
     lockable l_1("lock_1");
-    xlock_keep xk_1(&l_1);
+    xlock xk_1(&l_1);
   }
 
-  SUBCASE("flow 2 - two xlock_keep")
+  SUBCASE("flow 2 - locks on same lock")
   {
     lockable l_1("lock_1");
-    lockable l_2("lock_2");
 
-    xlock_keep xk_1(&l_1);
-    xlock_keep xk_2(&l_2);
+    xlock xk_1(&l_1);
+    CHECK(xk_1.is_called());
+    CHECK(xk_1.is_locked());
+
+    xlock xk_2(&l_1);
+    CHECK(xk_2.is_called() == false);
+    CHECK(xk_2.is_locked());
+
+    slock sk_1(&l_1);
+    CHECK(sk_1.is_called()); // called for downgrade
+    CHECK(sk_1.is_locked());
+
+    slock sk_2(&l_1);
+    CHECK(sk_2.is_called() == false);
+    CHECK(sk_2.is_locked());
+
+    xlock xk_3(&l_1);
+    CHECK(xk_3.is_called()); // called for upgrade
+    CHECK(xk_3.is_locked());
+
+    xlock xk_4(&l_1);
+    CHECK(xk_4.is_called() == false);
+    CHECK(xk_4.is_locked());
   }
 
-  SUBCASE("flow 3 - xlock_keep and slock_keep")
-  {
-    lockable l_1("lock_1");
-    xlock_keep xk_1(&l_1);
-    slock_keep sk_1(&l_1);
-  }
-
-  SUBCASE("flow 4 - alternating xlock_keep and slock_keep")
+  SUBCASE("flow 3 - locks on same lock nested")
   {
     lockable l_1("lock_1");
 
-    xlock_keep xk_1(&l_1);
     {
-      slock_keep sk_1(&l_1); // downgrade
+      xlock xk_1(&l_1);
+      CHECK(xk_1.is_called());
+      CHECK(xk_1.is_locked());
+
+      {
+        xlock xk_2(&l_1);
+        CHECK(xk_2.is_called() == false);
+        CHECK(xk_2.is_locked());
+
+        {
+          slock sk_1(&l_1);
+          CHECK(sk_1.is_called()); // called for downgrade
+          CHECK(sk_1.is_locked());
+
+          {
+            slock sk_2(&l_1);
+            CHECK(sk_2.is_called() == false); // re-enter
+            CHECK(sk_2.is_locked());
+
+            {
+              xlock xk_3(&l_1);
+              CHECK(xk_3.is_called()); // called for upgrade
+              CHECK(xk_3.is_locked());
+
+              xlock xk_4(&l_1);
+              CHECK(xk_4.is_called() == false); // re-enter
+              CHECK(xk_4.is_locked());
+            }
+          }
+        }
+      }
+
+      // sk_1이 exit할 때 xk_2를 보고 다시 xlock 모드로 락
+      CHECK(xk_1.is_called());
+      CHECK(xk_1.is_locked());
+    }
+  }
+
+  SUBCASE("flow 4 - alternating xlock and slock")
+  {
+    lockable l_1("lock_1");
+
+    xlock xk_1(&l_1);
+    {
+      slock sk_1(&l_1); // downgrade
 
       CHECK(sk_1.is_locked());
       CHECK(sk_1.is_called());
 
-      CHECK(xk_1.is_locked() == false);
-      CHECK(xk_1.is_called() == false);
+      CHECK(xk_1.is_locked()); // though, downgraded
+      CHECK(xk_1.is_called());
 
       {
-        xlock_keep xk2_1(&l_1); // upgrade
+        xlock xk2_1(&l_1); // upgrade
 
         CHECK(xk2_1.is_locked());
         CHECK(xk2_1.is_called());
-
-        CHECK(sk_1.is_locked() == false);
-        CHECK(sk_1.is_called() == false);
       }
 
       // recovered to sk_1
 
-      CHECK(sk_1.is_locked());
+      CHECK(sk_1.is_locked()); // though, downgraded
       CHECK(sk_1.is_called());
     }
 
@@ -63,116 +116,46 @@ TEST_CASE("basic interface")
     CHECK(xk_1.is_called());
   }
 
-  SUBCASE("flow 5 - xlock_solo")
-  {
-    lockable l_1("lock_1");
-    xlock_solo xs_1(&l_1);
-
-    CHECK(xs_1.is_called());
-    CHECK(xs_1.is_locked());
-  }
-
-  SUBCASE("flow 6 - xlock_solo after keep locks")
-  {
-    lockable l_1("lock_1");
-
-    xlock_keep xk_1(&l_1);
-    CHECK(xk_1.is_locked());
-    CHECK(xk_1.is_called());
-
-    // enter solo lock region
-    {
-      xlock_solo xs_1(&l_1);
-      CHECK(xs_1.is_called());
-      CHECK(xs_1.is_locked());
-
-      CHECK(xk_1.is_called());
-      CHECK(xk_1.is_locked() == false);
-    }
-
-    // recover to xk_1
-    CHECK(xk_1.is_called());
-    CHECK(xk_1.is_locked());
-  }
-
-  SUBCASE("flow 7 - solo downgrade and recover")
+  SUBCASE("flow 5 - downgrade and recover")
   {
     lockable l_1("lock_1");
     lockable l_2("lock_2");
 
-    xlock_keep xk_1(&l_1);
+    xlock xk_1(&l_1);
     CHECK(xk_1.is_locked());
     CHECK(xk_1.is_called());
 
-    // enter solo lock region
     {
-      xlock_solo xs_1(&l_2);
-      CHECK(xs_1.is_called());
-      CHECK(xs_1.is_locked());
+      slock sk_1(&l_1);
+      CHECK(sk_1.is_locked());
+      CHECK(sk_1.is_called());
 
-      CHECK(xk_1.is_called());
-      CHECK(xk_1.is_locked() == false);
-
-      // enter shared lock region
+      // enter slock region
       {
-        // downgrade
-        slock_solo ss_1(&l_2);
-        CHECK(ss_1.is_called());
-        CHECK(ss_1.is_locked());
+        slock sk_2(&l_2);
+        CHECK(sk_2.is_called());
+        CHECK(sk_2.is_locked());
 
-        CHECK(xs_1.is_called());
-        CHECK(xs_1.is_locked() == false);
+        xlock xk_2(&l_2);
+        CHECK(xk_2.is_called());
+        CHECK(xk_2.is_locked());
       }
-      // recover to xs_1
-      // ~ss_1, xk_1, xs_1 순으로 실행 (~는 unlock. 없으면 lock) 
     }
 
-    // recover to xk_1
-    CHECK(xk_1.is_called());
-    CHECK(xk_1.is_locked());
-  }
-
-  SUBCASE("flow 8 - solo upgrade and recover")
-  {
-    lockable l_1("lock_1");
-    lockable l_2("lock_2");
-
-    xlock_keep xk_1(&l_1);
-    CHECK(xk_1.is_locked());
-    CHECK(xk_1.is_called());
-
-    // enter solo lock region
-    {
-      slock_solo ss_1(&l_2);
-      CHECK(ss_1.is_called());
-      CHECK(ss_1.is_locked());
-
-      CHECK(xk_1.is_called());
-      CHECK(xk_1.is_locked() == false);
-
-      // enter shared lock region
-      {
-        // upgrade
-        xlock_solo xs_1(&l_2);
-        CHECK(xs_1.is_called());
-        CHECK(xs_1.is_locked());
-
-        CHECK(ss_1.is_called());
-        CHECK(ss_1.is_locked() == false);
-      }
-      // recover to xs_1
-      // ~xs_1, xk_1, ss_1 순으로 실행 (~는 unlock. 없으면 lock) 
-    }
-
-    // recover to xk_1
+    // recovered
     CHECK(xk_1.is_called());
     CHECK(xk_1.is_locked());
   }
 }
 
-TEST_CASE("producer / consumer locking")
+TEST_CASE("lock between threads")
 {
+  SUBCASE("two threads on variables")
+  {
+    lockable l_1("lock_1");
 
+    
+  }
 }
 
 TEST_CASE("multiple read / write access")

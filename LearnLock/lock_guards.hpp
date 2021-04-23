@@ -28,80 +28,40 @@ protected:
   int8_t index_ = -1;
 };
 
-class xlock_keep : public lock_guard_base
+class xlock : public lock_guard_base
 {
 public: 
-  xlock_keep(lockable* lock)
+  xlock(lockable* lock)
     : lock_(lock)
   {
     assert(lock_ != nullptr);
 
-    index_ = lock_thread_tracer::inst.enter_xlock_keep(lock_);
+    index_ = lock_thread_tracer::inst.enter_xlock(lock_);
   }
 
-  ~xlock_keep()
+  ~xlock()
   {
-    lock_thread_tracer::inst.exit_xlock_keep(lock_);
+    lock_thread_tracer::inst.exit_xlock(lock_);
   }
 
 private: 
   lockable* lock_;
 };
 
-class slock_keep : public lock_guard_base
+class slock : public lock_guard_base
 {
 public: 
-  slock_keep(lockable* lock)
+  slock(lockable* lock)
     : lock_(lock)
   {
     assert(lock_ != nullptr);
 
-    index_ = lock_thread_tracer::inst.enter_slock_keep(lock_);
+    index_ = lock_thread_tracer::inst.enter_slock(lock_);
   }
 
-  ~slock_keep()
+  ~slock()
   {
-    lock_thread_tracer::inst.exit_slock_keep(lock_);
-  }
-
-private: 
-  lockable* lock_;
-};
-
-class xlock_solo : public lock_guard_base
-{
-public: 
-  xlock_solo(lockable* lock)
-    : lock_(lock)
-  {
-    assert(lock_ != nullptr);
-
-    index_ = lock_thread_tracer::inst.enter_xlock_solo(lock_);
-  }
-
-  ~xlock_solo()
-  {
-    lock_thread_tracer::inst.exit_xlock_solo(lock_);
-  }
-
-private: 
-  lockable* lock_;
-};
-
-class slock_solo : public lock_guard_base
-{
-public: 
-  slock_solo(lockable* lock)
-    : lock_(lock)
-  {
-    assert(lock_ != nullptr);
-
-    index_ = lock_thread_tracer::inst.enter_slock_solo(lock_);
-  }
-
-  ~slock_solo()
-  {
-    lock_thread_tracer::inst.exit_slock_solo(lock_);
+    lock_thread_tracer::inst.exit_slock(lock_);
   }
 
 private: 
