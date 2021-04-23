@@ -63,6 +63,13 @@ std::shared_mutex의 기본 구현은 recursive 하지 않으므로 그렇게 만들어야 한다.
 	- this is not changed after acquring the lock 
 	- used to lock again when exit a lock
 
+### unlock / lock 방식의 락 전환 문제 
+
+짧지만 다른 쓰레드가 락을 잡고 변경해 버리면 변경된 값을 다시 읽어야 한다. 
+
+스핀락을 하나 두고 락을 잡은 상태에서 upgrade / downgrade를 진행하면 어떨까? 
+
+
 
 
 

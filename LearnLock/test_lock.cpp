@@ -183,7 +183,7 @@ TEST_CASE("lock between threads")
     t2.join();
 
     // slock에서 xlock으로 unlock으로 업그레이하면 값 유지가 안 된다.. 
-    CHECK(v >= 0); 
+    CHECK(v == 2000); 
   }
 }
 

@@ -88,11 +88,10 @@ public:
       case lock_type::slock:
       {
         // upgrade 
-        e_lock->lock_->unlock_shared();
+        e_lock->lock_->upgrade();
 
         // e_lock is still locked by following 
 
-        n_lock->lock_->lock();
         n_lock->called_ = true;
       }
       break;
@@ -199,11 +198,10 @@ public:
       case lock_type::xlock:
       {
         // downgrade 
-        e_lock->lock_->unlock();
+        e_lock->lock_->downgrade();
 
         // e_lock is still locked by following 
 
-        n_lock->lock_->lock_shared();
         n_lock->called_ = true;
       }
       break;
