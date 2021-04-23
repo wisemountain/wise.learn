@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="main">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="lock">
+      <UniqueIdentifier>{21acdb1e-a5ef-4ed9-aa0b-1f7b6056276a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{b5f79a48-b558-40db-a005-3cff9032d5b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fmt">
+      <UniqueIdentifier>{8cca31c9-c52e-4e66-8b6f-81bccf536d15}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LearnLock.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
+    <ClCompile Include="lock_tracer.cpp">
+      <Filter>lock</Filter>
+    </ClCompile>
+    <ClCompile Include="lock_thread_tracer.cpp">
+      <Filter>lock</Filter>
+    </ClCompile>
+    <ClCompile Include="test_lock.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="os.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="format.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lock_thread_tracer.hpp">
+      <Filter>lock</Filter>
+    </ClInclude>
+    <ClInclude Include="lock_tracer.hpp">
+      <Filter>lock</Filter>
+    </ClInclude>
+    <ClInclude Include="lockable.hpp">
+      <Filter>lock</Filter>
+    </ClInclude>
+    <ClInclude Include="lock_guards.hpp">
+      <Filter>lock</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+</Project>
