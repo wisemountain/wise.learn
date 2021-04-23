@@ -48,9 +48,6 @@
     <ClInclude Include="lock_guards.hpp">
       <Filter>lock</Filter>
     </ClInclude>
-    <ClInclude Include="spinlock.hpp">
-      <Filter>lock</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

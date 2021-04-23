@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <cassert>
 #include <shared_mutex>
 #include <string_view>
 
@@ -37,12 +38,12 @@ public:
 
     do
     {
-      while (mode_latch_)
+      while (mode_latch_.load(std::memory_order::memory_order_acquire))
         cpu_relax();
 
       std::shared_mutex::lock();
 
-      bv = mode_latch_;
+      bv = mode_latch_.load(std::memory_order::memory_order_acquire);
 
       if (bv) // lock 호출 동안에 래치가 잡혀있다면 
       {
@@ -67,12 +68,12 @@ public:
 
     do
     {
-      while (mode_latch_)
+      while (mode_latch_.load(std::memory_order::memory_order_acquire))
         cpu_relax();
 
       std::shared_mutex::lock_shared();
 
-      bv = mode_latch_;
+      bv = mode_latch_.load(std::memory_order::memory_order_acquire);
 
       if (bv)
       {
@@ -93,24 +94,62 @@ public:
 
   void upgrade() noexcept
   {
-    while (mode_latch_)
-      cpu_relax();
+    bool bv = false;
+    bool unlocked = false;
 
-    mode_latch_ = 1;
-    std::shared_mutex::unlock_shared();   
+    while (!mode_latch_.compare_exchange_strong(bv, true))
+    {
+      cpu_relax();
+      bv = false;
+
+      if (!unlocked)
+      {
+        // 래치가 잡혀 있으면 락을 풀어준다.
+        std::shared_mutex::unlock_shared();
+        unlocked = true;
+      }
+    }
+
+    assert(bv == false);
+    assert(mode_latch_);
+
+    if (!unlocked)
+    {
+      std::shared_mutex::unlock_shared();
+    }
+
     std::shared_mutex::lock();
-    mode_latch_ = 0; 
+    mode_latch_.store(false, std::memory_order::memory_order_release);
   }
 
   void downgrade() noexcept
   {
-    while (mode_latch_)
-      cpu_relax();
+    bool bv = false;
+    bool unlocked = false;
 
-    mode_latch_ = 1;
-    std::shared_mutex::unlock();
+    while (!mode_latch_.compare_exchange_strong(bv, true))
+    {
+      cpu_relax();
+      bv = false;
+
+      if (!unlocked)
+      {
+        // 래치가 잡혀 있으면 락을 풀어준다.
+        std::shared_mutex::unlock();
+        unlocked = true;
+      }
+    }
+
+    assert(bv == false);
+    assert(mode_latch_);
+
+    if (!unlocked)
+    {
+      std::shared_mutex::unlock();
+    }
+
     std::shared_mutex::lock_shared();
-    mode_latch_ = 0;
+    mode_latch_.store(false, std::memory_order::memory_order_release);
   }
 
 private: 

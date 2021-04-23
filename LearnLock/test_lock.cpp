@@ -157,7 +157,49 @@ TEST_CASE("lock between threads")
   {
     lockable l_1("lock_1");
 
-    for (int j = 0; j < 100000; ++j)
+    for (int j = 0; j < 100; ++j)
+    {
+      int v = 0;
+
+      std::thread t1([&l_1, &v]() {
+        for (int i = 0; i < 1000; ++i)
+        {
+          xlock x_1(&l_1);
+          v += 1;
+
+          slock s_1(&l_1); // downgrade
+        }
+        });
+
+      auto func = [&l_1, &v]() {
+        for (int i = 0; i < 1000; ++i)
+        {
+          int lv = 0;
+
+          slock s_1(&l_1);
+          lv = v;
+
+          xlock x_1(&l_1);
+          v = ++lv;
+        }
+      };
+
+      std::thread t2(func);
+
+      t1.join();
+      t2.join();
+
+      CHECK(v == 2000);
+
+      std::cout << "loop: " << j << std::endl;
+    }
+  }
+
+  SUBCASE("more threads on variables")
+  {
+    lockable l_1("lock_1");
+
+    for (int j = 0; j < 1; ++j)
     {
       int v = 0;
 
@@ -177,23 +219,41 @@ TEST_CASE("lock between threads")
           slock s_1(&l_1);
           lv = v;
 
-          xlock x_1(&l_1);
+          xlock x_1(&l_1); // upgrade
           v = ++lv;
         }
-        });
+      });
+
+      std::thread t3([&l_1, &v]() {
+        for (int i = 0; i < 1000; ++i)
+        {
+          int lv = 0;
+
+          slock s_1(&l_1);
+          lv = v;
+
+          xlock x_1(&l_1); // upgrade
+          v = ++lv;
+        }
+      });
+
+
+      //std::thread t4(func);
+      //std::thread t5(func);
+      //std::thread t6(func);
+      //std::thread t7(func);
 
       t1.join();
       t2.join();
+      t3.join();
+      //t4.join();
+      //t5.join();
+      //t6.join();
+      //t7.join();
 
-      // slock에서 xlock으로 unlock으로 업그레이하면 값 유지가 안 된다.. 
-      CHECK(v == 2000);
+      CHECK(v == 3000);
 
       std::cout << "loop: " << j << std::endl;
     }
   }
-}
-
-TEST_CASE("multiple read / write access")
-{
-
 }
