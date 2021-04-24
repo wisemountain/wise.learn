@@ -281,7 +281,13 @@ public:
   simple_object()
     : v_{ 0 }
     , lock_{ "simple_object" }
+    , slow_read_(false)
   {}
+
+  void set_slow_read()
+  {
+    slow_read_ = true;
+  }
 
   void add(int av)
   {
@@ -292,6 +298,10 @@ public:
   int get() const
   {
     slock s(lock_); 
+    if (slow_read_)
+    {
+      YieldProcessor();
+    }
     return v_;
   }
 
@@ -309,6 +319,38 @@ public:
 private:
   int v_;
   mutable lockable lock_;
+  bool slow_read_;
+};
+
+class simple_object_mutex 
+{
+public: 
+  simple_object_mutex()
+    : v_{ 0 }
+    , lock_{}
+  {}
+
+  void add(int av)
+  {
+    std::lock_guard x(lock_);
+    v_ += av;
+  }
+
+  int get() const
+  {
+    std::lock_guard s(lock_); 
+    return v_;
+  }
+
+  int get2() const
+  {
+    std::lock_guard s(lock_);
+    return v_ + 2;
+  }
+
+private:
+  int v_;
+  mutable std::mutex lock_;
 };
 
 } // noname
@@ -317,7 +359,7 @@ TEST_CASE("code simulation")
 {
   SUBCASE("simple object")
   {
-    simple_object so; 
+    simple_object so;
 
     std::thread t1([&so]() {
       for (int i = 0; i < 100; ++i)
@@ -336,7 +378,7 @@ TEST_CASE("code simulation")
     t1.join();
     t2.join();
 
-    CHECK(so.get() == (3*100 + 5 * 100));
+    CHECK(so.get() == (3 * 100 + 5 * 100));
   }
 
   SUBCASE("handler")
@@ -350,5 +392,268 @@ TEST_CASE("code simulation")
     CHECK(so.get2() == 5);    // re-enter
 
     // recovered xlock 
+  }
+
+  SUBCASE("upgrade/downgrade high contention")
+  {
+    simple_object so;
+
+    constexpr int test_count = 10000000;
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::thread t1([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        xlock x(so.lock());
+        so.add(1);
+        {
+          slock s(so.lock()); // downgrade
+          so.get();
+        }
+        // upgrade
+      }
+      });
+
+    std::thread t2([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        xlock x(so.lock());
+        so.add(1);
+        {
+          slock s(so.lock());
+          so.get();
+        }
+      }
+      });
+
+    std::thread t3([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        slock s(so.lock());
+        so.get();
+        {
+          xlock x(so.lock()); // upgrade
+          so.add(1);
+        }
+        // downgrade
+      }
+      });
+
+    std::thread t4([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        slock s(so.lock());
+        so.get();
+        {
+          xlock x(so.lock());
+          so.add(1);
+        }
+      }
+      });
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+
+    CHECK(so.get() == test_count * 4);
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto diff = end - start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+
+    std::cout << "up/down. elapsed: " << ms << std::endl;
+  }
+}
+
+TEST_CASE("performance")
+{
+  SUBCASE("performance - writer and reader")
+  {
+    simple_object so; 
+
+    constexpr int test_count = 10000000;
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::thread t1([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(3);
+      }
+      });
+
+    std::thread t2([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(1);
+      }
+      });
+
+    std::thread t3([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    std::thread t4([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto diff = end - start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+
+    std::cout << "elapsed: " << ms << std::endl;
+
+    // 4개 쓰레드, 1천만, 1456ms 
+    // 4개 쓰레드, 1천만, 1172ms 
+    // 4개 쓰레드, 1천만, 1160ms 
+  }
+
+  SUBCASE("performance - reader / writer with mutex")
+  {
+    simple_object_mutex so;
+
+    constexpr int test_count = 10000000;
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::thread t1([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(3);
+      }
+      });
+
+    std::thread t2([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(1);
+      }
+      });
+
+    std::thread t3([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    std::thread t4([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto diff = end - start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+
+    std::cout << "elapsed: " << ms << std::endl;
+
+    // 4개 쓰레드, 1천만, 1167ms 
+    // 4개 쓰레드, 1천만, 1199ms 
+    // 4개 쓰레드, 1천만, 1214ms 
+  }
+
+  SUBCASE("performance - writer and reader. slow read")
+  {
+    simple_object so;
+
+    so.set_slow_read();
+
+    constexpr int test_count = 10000000;
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::thread t1([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(3);
+      }
+      });
+
+    std::thread t2([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.add(1);
+      }
+      });
+
+    std::thread t3([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    std::thread t4([&so, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        so.get();
+      }
+      });
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto diff = end - start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+
+    std::cout << "slow read. elapsed: " << ms << std::endl;
+
+    // 1천만, 2245ms 
+  }
+
+  SUBCASE("performance - call overhead")
+  {
+    lockable lock("test");
+
+    constexpr int test_count = 10000000;
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::thread t1([&lock, test_count]() {
+      for (int i = 0; i < test_count; ++i)
+      {
+        xlock x(lock);
+        slock s(lock);
+      }
+      });
+
+    t1.join();
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto diff = end - start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+
+    std::cout << "call overhead. elapsed: " << ms << std::endl;
+
+    // 1천만, 283ms 
   }
 }

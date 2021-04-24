@@ -18,8 +18,11 @@
 namespace learn
 {
 
-class lockable : public std::shared_mutex
+class lockable : protected std::shared_mutex
 {
+public: 
+  static constexpr int retry_sleep_count = 1000;
+
 public:
   lockable(const char* name)
     : std::shared_mutex()
@@ -38,10 +41,7 @@ public:
 
     do
     {
-      while (mode_latch_)
-      {
-        cpu_relax();
-      }
+      wait_latch();
 
       std::shared_mutex::lock(); 
 
@@ -70,10 +70,7 @@ public:
 
     do
     {
-      while (mode_latch_)
-      {
-        cpu_relax();
-      }
+      wait_latch();
 
       std::shared_mutex::lock_shared();
 
@@ -118,6 +115,31 @@ public:
     std::shared_mutex::lock_shared();
 
     --mode_latch_;
+  }
+
+private: 
+
+  void wait_latch()
+  {
+      int try_count = 0;
+
+      while (mode_latch_)
+      {
+        cpu_relax();
+
+        ++try_count;
+
+        if (try_count >= retry_sleep_count)
+        {
+          sleep(1);
+          try_count = 0;
+        }
+      }
+  }
+
+  void sleep(int ms)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
   }
 
 private: 
