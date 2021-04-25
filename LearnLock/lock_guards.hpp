@@ -34,10 +34,28 @@ public:
   xlock(lockable& lock)
     : lock_(lock)
   {
-    index_ = lock_thread_tracer::inst.enter_xlock(&lock_);
+    index_ = lock_thread_tracer::inst.enter_xlock(&lock_, false);
   }
 
   ~xlock()
+  {
+    lock_thread_tracer::inst.exit_xlock(&lock_);
+  }
+
+private: 
+  lockable& lock_;
+};
+
+class xlock_keep : public lock_guard_base
+{
+public: 
+  xlock_keep(lockable& lock)
+    : lock_(lock)
+  {
+    index_ = lock_thread_tracer::inst.enter_xlock(&lock_, true);
+  }
+
+  ~xlock_keep()
   {
     lock_thread_tracer::inst.exit_xlock(&lock_);
   }

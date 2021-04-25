@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <thread>
+#include <vector>
 
 using namespace learn;
 
@@ -76,6 +77,8 @@ TEST_CASE("basic interface")
               xlock xk_4(l_1);
               CHECK(xk_4.is_called() == false); // re-enter
               CHECK(xk_4.is_locked());
+
+              std::cout << lock_tracer::inst.to_string(std::this_thread::get_id()) << std::endl;
             }
           }
         }
@@ -149,6 +152,38 @@ TEST_CASE("basic interface")
     CHECK(xk_1.is_called());
     CHECK(xk_1.is_locked());
   }
+
+  SUBCASE("flow 6 - xlock_keep")
+  {
+    lockable l_1("lock_1");
+    lockable l_2("lock_2");
+
+    // xlock_keep는 xlock 모드를 유지하면서 재진입한다. 
+    xlock_keep xk_1(l_1);
+    CHECK(xk_1.is_locked());
+    CHECK(xk_1.is_called());
+
+    {
+      slock sk_1(l_1);
+      CHECK(sk_1.is_locked());
+      CHECK(sk_1.is_called() == false);
+
+      // enter slock region
+      {
+        slock sk_2(l_2);
+        CHECK(sk_2.is_called());
+        CHECK(sk_2.is_locked());
+
+        xlock_keep xk_2(l_2);   // upgrade해서 진입하고 이후 xlock을 유지한다.
+        CHECK(xk_2.is_locked());
+        CHECK(xk_2.is_called());
+      }
+    }
+
+    // 
+    CHECK(xk_1.is_called());
+    CHECK(xk_1.is_locked());
+  }
 }
 
 TEST_CASE("lock between threads")
@@ -176,11 +211,13 @@ TEST_CASE("lock between threads")
         {
           int lv = 0;
 
-          slock s_1(l_1);
-          lv = v;           // 여러 쓰레드에서 실행할 경우, 여기서 이전 값을 같이 보게 된다.
+          slock s_1(l_1); // upgrade와 새로운 xlock 간에는 slock으로 읽은 값이 유효하다.
+          lv = v;           
 
-          xlock x_1(l_1);
-          v = ++lv;         // 하나의 쓰레드에서 먼저 실행하고, 이전 값을 본 쓰레드에서 덮어 쓴다. 이는 정상 동작이다.
+          {
+            xlock x_1(l_1); 
+            v = ++lv;        
+          }
         }
       };
 
@@ -220,7 +257,7 @@ TEST_CASE("lock between threads")
           lv = v;
           v = ++lv;
 
-          // downgrade는 변경 값을 정확하게 볼 수 있다.
+          // downgrade도 트랜잭션은 아니다. (unlock시 다른 쓰레드가 잡을 수 있다)
           {
             slock s_1(l_1);
             CHECK(lv == v);
@@ -233,12 +270,12 @@ TEST_CASE("lock between threads")
         {
           int lv = 0;
 
-          xlock x_1(l_1); 
+          xlock_keep x_1(l_1); 
           lv = v;
           v = ++lv;
 
           {
-            slock s_1(l_1);
+            slock s_1(l_1); // xlock_keep를 쓰면 정확한 값이 보장된다.
             CHECK(lv == v);
           }
         }
@@ -281,13 +318,7 @@ public:
   simple_object()
     : v_{ 0 }
     , lock_{ "simple_object" }
-    , slow_read_(false)
   {}
-
-  void set_slow_read()
-  {
-    slow_read_ = true;
-  }
 
   void add(int av)
   {
@@ -298,10 +329,6 @@ public:
   int get() const
   {
     slock s(lock_); 
-    if (slow_read_)
-    {
-      YieldProcessor();
-    }
     return v_;
   }
 
@@ -311,6 +338,21 @@ public:
     return v_ + 2;
   }
 
+  void push(int v)
+  {
+    xlock x(lock_);
+    vs_.push_back(v);
+  }
+
+  void pop()
+  {
+    xlock x(lock_);
+    if (!vs_.empty())
+    {
+      vs_.pop_back();
+    }
+  }
+
   lockable& lock()
   {
     return lock_;
@@ -318,8 +360,8 @@ public:
 
 private:
   int v_;
+  std::vector<int> vs_;
   mutable lockable lock_;
-  bool slow_read_;
 };
 
 class simple_object_mutex 
@@ -569,18 +611,16 @@ TEST_CASE("performance")
     auto diff = end - start;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 
-    std::cout << "elapsed: " << ms << std::endl;
+    std::cout << "mutex. elapsed: " << ms << std::endl;
 
     // 4개 쓰레드, 1천만, 1167ms 
     // 4개 쓰레드, 1천만, 1199ms 
     // 4개 쓰레드, 1천만, 1214ms 
   }
 
-  SUBCASE("performance - writer and reader. slow read")
+  SUBCASE("performance - writer and reader. push/pop")
   {
     simple_object so;
-
-    so.set_slow_read();
 
     constexpr int test_count = 10000000;
 
@@ -589,28 +629,28 @@ TEST_CASE("performance")
     std::thread t1([&so, test_count]() {
       for (int i = 0; i < test_count; ++i)
       {
-        so.add(3);
+        so.push(3);
       }
       });
 
     std::thread t2([&so, test_count]() {
       for (int i = 0; i < test_count; ++i)
       {
-        so.add(1);
+        so.push(1);
       }
       });
 
     std::thread t3([&so, test_count]() {
       for (int i = 0; i < test_count; ++i)
       {
-        so.get();
+        so.pop();
       }
       });
 
     std::thread t4([&so, test_count]() {
       for (int i = 0; i < test_count; ++i)
       {
-        so.get();
+        so.pop();
       }
       });
 
@@ -624,7 +664,7 @@ TEST_CASE("performance")
     auto diff = end - start;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 
-    std::cout << "slow read. elapsed: " << ms << std::endl;
+    std::cout << "push/pop. elapsed: " << ms << std::endl;
 
     // 1천만, 2245ms 
   }
