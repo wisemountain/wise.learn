@@ -285,8 +285,8 @@ view는 게임에서 흔히 쓰는 read uncommitted isolation 수준과 같이 �
 [4] handler는 대상 오브젝트에 대한 view들을 얻어서 업데이트 처리를 한다. 
     즉, 함수 호출로 상태 값들을 얻어서 업데이트 함수들을 호출한다. 
 
-[5] 다른 entity에 대한 xlock을 얻을 때 slock으로 downgrade하고 호출하던가 xlock을 풀고 호출하면 
-	데드락을 피할 수 있다. 
+[5] 다른 entity에 대한 lock을 풀고 호출하면 데드락을 피할 수 있으며 
+    대체로 안전하다. 
 
 [6] concurrent 구조와 같은 더 빠른 구현이 없다면 xlock, slock을 사용한다. 
 
