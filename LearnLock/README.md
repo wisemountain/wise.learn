@@ -19,7 +19,7 @@ post를 통한 타이머와 이벤트 콜백 처리와 함께 여러 코어를 �
 분산 처리를 배제하고 처리하는 구조로 처리 코드가 단순하면서 동시성을 손쉽게 높일 
 수 있다는 장점이 가장 크다. 
 
-단지, shared state multithreading 구조이기 때문에 thread-safe 하게 만들고 
+단지, shared state multi-threading 구조이기 때문에 thread-safe 하게 만들고 
 맵 내 엔티티 관리와 같이 중요한 처리 부분의 동시성을 올리면서 동시에 
 thread-safe 하게 만드는 것이 함께 중요하고 어렵다. 
 
@@ -30,8 +30,8 @@ thread-safe 하게 만드는 것이 함께 중요하고 어렵다.
 [1] read도 thread-safe 해야 한다. 
 
 읽기에 락을 걸면 여러 쓰레드 간에 락 경쟁 (lock contention)이 높아질 가능성이 생기므로 
-read / write 락을 쓰거나 spinlock을 사용해야 성능 문제가 발생하지 않도록 할 수 있다. 
-spinlock은 CPU 사용량을 전체적으로 많이 올리 수 있기 때문에 전체에 적용하기는 어렵다. 
+read / write 락을 쓰거나 spin lock을 사용해야 성능 문제가 발생하지 않도록 할 수 있다. 
+spin lock은 CPU 사용량을 전체적으로 많이 올리 수 있기 때문에 전체에 적용하기는 어렵다. 
 
 [2] reader / writer 락이 필요하다. 
 
@@ -44,7 +44,7 @@ read / write 락의 표준 구현은 shard_mutex이며 windows에서는 Slim Rea
 다른 멤버 함수를 호출할 때 락을 여러 번 잡게 되므로 recursive해야 한다. 
 std::shared_mutex의 기본 구현은 recursive 하지 않으므로 그렇게 만들어야 한다. 
 
-[4] recurisve 한 std::shared_mutex가 필요하다. 
+[4] recursive 한 std::shared_mutex가 필요하다. 
 
 또한 같은 오브젝트의 락에 대해 읽기 중에 쓰기 함수 호출, 쓰기 중에 읽기 함수 호출이 
 있을 수 있고 생각보다 많으므로 reader --> writer, writer --> reader 간의 락 전환이 
@@ -244,35 +244,34 @@ xlock 간의 데드락이 발생하는 부분은 별도로 정리한다.
 ### 정의 
 
 - container와 object
+	
+	> 다른 오브젝트를 담는 자료 구조이다. Map 또는 Level과 내부에 포함되는 Sector를 컨테이너로 
+	> 볼 수도 있다. Sector도 여러 Entity를 담는 container로 볼 수 있다. 
 
-다른 오브젝트를 담는 자료 구조이다. Map 또는 Level과 내부에 포함되는 Sector를 컨테이너로 
-볼 수도 있다. Sector도 여러 Entity를 담는 container로 볼 수 있다. 
+	> 흔히 만나는 UserManager, GuildManager와 같은 Manager들도 컨테이너로 볼 수 있다. 다른 관점에서 
+	> 이들을 처리기로 구현할 수도 있다. 처리기는 처리 논리를 포함하는 클래스이다. 
 
-흔히 만나는 UserManager, GuildManager와 같은 Manager들도 컨테이너로 볼 수 있다. 다른 관점에서 
-이들을 처리기로 구현할 수도 있다. 처리기는 처리 논리를 포함하는 클래스이다. 
-
-object는 이들 컨테이너에 담기는 대상이다. GuildManager는 Guild를 포함한다. 
-UserManager는 User를 포함한다. 이들 object는 상태 값을 제공하는 용도로 사용한다. 
+	> object는 이들 컨테이너에 담기는 대상이다. GuildManager는 Guild를 포함한다. 
+	> UserManager는 User를 포함한다. 이들 object는 상태 값을 제공하는 용도로 사용한다. 
 
 - entity 
 
-entity는 내부적으로 slock과 xlock으로 thread-safe하게 한다. 
+	> entity는 내부적으로 slock과 xlock으로 thread-safe하게 한다. 
 
 - handler 
-
-핸들러는 패킷이나 타이머 호출을 처리하는 함수로 게임 서버 처리의 모든 시작점들이다. 
-따라서, handler들에서 잡는 락 흐름이 서버의 락 처리 구조가 된다. 
+  	
+	>  핸들러는 패킷이나 타이머 호출을 처리하는 함수로 게임 서버 처리의 모든 시작점들이다. 
+  	> 따라서, handler들에서 잡는 락 흐름이 서버의 락 처리 구조가 된다. 
 
 - view
 
-게임 서버는 트랜잭션을 처리하는 시스템이 아닌 게임의 현재 상태에 따라 다음 상태로 
-옮겨가는 시스템이다. 현재 관찰된 값들에 대해 처리하여 다음 상태로 이행한다는 관점에서 
-`관찰된 값들`을 뷰라고 명명한다. 
-
-view는 게임에서 흔히 쓰는 read uncommitted isolation 수준과 같이 완전한 트랜잭션 처리가 
-아니더라도 현재 변경된 값들에서 게임 논리가 처리되더라도 거의 일관성(consistency)가 유지
-될 수 있다는 점에서 사용할 수 있는 개념이다. 
-
+	> 게임 서버는 트랜잭션을 처리하는 시스템이 아닌 게임의 현재 상태에 따라 다음 상태로 
+	> 옮겨가는 시스템이다. 현재 관찰된 값들에 대해 처리하여 다음 상태로 이행한다는 관점에서 
+	> `관찰된 값들`을 뷰라고 명명한다. 
+	
+	>  view는 게임에서 흔히 쓰는 read uncommitted isolation 수준과 같이 완전한 트랜잭션 처리가 
+	> 아니더라도 현재 변경된 값들에서 게임 논리가 처리되더라도 거의 일관성(consistency)가 유지
+	> 될 수 있다는 점에서 사용할 수 있는 개념이다. 
 
 ### 가이드 
 
@@ -285,8 +284,7 @@ view는 게임에서 흔히 쓰는 read uncommitted isolation 수준과 같이 �
 [4] handler는 대상 오브젝트에 대한 view들을 얻어서 업데이트 처리를 한다. 
     즉, 함수 호출로 상태 값들을 얻어서 업데이트 함수들을 호출한다. 
 
-[5] 다른 entity에 대한 lock을 풀고 호출하면 데드락을 피할 수 있으며 
-    대체로 안전하다. 
+[5] 다른 entity에 대한 lock을 풀고 호출하면 데드락을 피할 수 있다. 
 
 [6] concurrent 구조와 같은 더 빠른 구현이 없다면 xlock, slock을 사용한다. 
 
